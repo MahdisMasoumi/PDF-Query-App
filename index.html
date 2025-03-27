@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Query App</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        width: 450px;
+        text-align: center;
+      }
+      input,
+      button {
+        margin: 10px 0;
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+      #answer {
+        margin-top: 20px;
+        font-weight: bold;
+        text-align: left;
+      }
+      #context {
+        margin-top: 15px;
+        background-color: #f9f9f9;
+        border-left: 4px solid #007bff;
+        padding: 15px;
+        text-align: left;
+        border-radius: 5px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .context-label {
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 10px;
+        display: block;
+      }
+      .context-text {
+        color: #333;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>PDF Query Assistant</h2>
+      <input type="file" id="pdfFile" />
+      <input type="text" id="question" placeholder="Enter your question" />
+      <button onclick="handleSubmit()">Submit</button>
+      <div id="answer"></div>
+      <div id="context"></div>
+    </div>
+
+    <script>
+      async function handleSubmit() {
+        const fileInput = document.getElementById("pdfFile");
+        const questionInput = document.getElementById("question");
+        const answerDiv = document.getElementById("answer");
+        const contextDiv = document.getElementById("context");
+
+        if (!fileInput.files.length || !questionInput.value.trim()) {
+          alert("Please upload a PDF and enter a question.");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("question", questionInput.value);
+
+        try {
+          const response = await fetch("http://127.0.0.1:8000/api/query", {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await response.json();
+          answerDiv.innerHTML = `<strong>Answer:</strong> ${data.answer}`;
+
+          // Enhanced context display
+          if (data.relevant_context && data.relevant_context.length) {
+            contextDiv.innerHTML = `
+              <span class="context-label">Relevant Context:</span>
+              <div class="context-text">${data.relevant_context
+                .map(chunk => `<p>${chunk}</p>`)
+                .join("")}</div>
+            `;
+          } else {
+            contextDiv.innerHTML = "";
+          }
+        } catch (error) {
+          console.error("Error querying the document:", error);
+          answerDiv.innerHTML = "Error retrieving answer.";
+        }
+      }
+    </script>
+  </body>
+</html>
